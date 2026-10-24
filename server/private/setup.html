@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DayOne · Connect agents</title>
+<title>DayOne · Owner settings</title>
 <style>
 body{margin:0;background:#fbf8f2;color:#2b2621;font:16px/1.6 system-ui,sans-serif;padding:30px 20px}
 main{max-width:650px;margin:30px auto}h1{line-height:1.2}li{margin:12px 0}
@@ -14,12 +14,12 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#625c53}a{color:inhe
 </style>
 </head>
 <body><main>
-<a href="/">DayOne</a><h1>Connect your live agents</h1>
-<p>This owner-only setup connects ElevenLabs to this deployed website. It does not place a call or send an SMS.</p>
+<a href="/">DayOne</a><h1>Owner settings</h1>
+<p>This restricted page connects ElevenLabs to this deployed website. It does not place a call or send an SMS.</p>
 <ol>
-<li>In Render → this service → Environment, add <strong>ELEVENLABS_API_KEY</strong> with Agents read/write access and tool access. The Blueprint generates <strong>SESSION_SECRET</strong> for you. Never put keys in GitHub.</li>
-<li>The Blueprint generates <strong>TOOL_SECRET</strong>. Paste its value into the password field below. It is sent only to this website’s protected setup endpoint and is not saved in your browser.</li>
-<li>To send real SMS later, add <strong>VOBIZ_AUTH_ID</strong>, <strong>VOBIZ_AUTH_TOKEN</strong>, and <strong>VOBIZ_SENDER_ID</strong> (a messaging-enabled number), then set <strong>SMS_PROVIDER=vobiz</strong>. Recipient-country registration may also be required.</li>
+<li>In Render → this service → Environment, set <strong>ELEVENLABS_API_KEY</strong> with agent and tool permissions. The Blueprint generates <strong>SESSION_SECRET</strong>. Never put keys in GitHub.</li>
+<li>Render generates <strong>TOOL_SECRET</strong>. Enter it below to authorize the setup operation. It is not saved in browser storage.</li>
+<li>For real SMS, configure <strong>VOBIZ_AUTH_ID</strong>, <strong>VOBIZ_AUTH_TOKEN</strong>, and <strong>VOBIZ_SENDER_ID</strong> (a messaging-enabled number), then set <strong>SMS_PROVIDER=vobiz</strong>. Country-specific registration may also be required.</li>
 </ol>
 <form id="setup">
 <label for="secret">This service’s TOOL_SECRET</label>
@@ -27,7 +27,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#625c53}a{color:inhe
 <button id="connect" type="submit">Connect browser and phone agents</button>
 </form>
 <pre id="status" role="status" aria-live="polite"></pre>
-<p><small>Free Render hosting sleeps when idle. Generated site links are temporary and will stop working after local data is reset. Phone routing and Vobiz account credit must also be configured. Use paid persistent storage before serving real customers.</small></p>
+<p><small>Free Render hosting sleeps when idle. Local generated sites are temporary. Telephone calls also need working Vobiz SIP routing and provider credit.</small></p>
 </main>
 <script>
 document.getElementById('setup').addEventListener('submit',async function(event){
@@ -40,8 +40,8 @@ try{
 const response=await fetch('/api/voice/setup',{method:'POST',headers:{'x-dayone-secret':input.value}});
 input.value='';
 const data=await response.json();
-if(!response.ok)throw new Error(data.error||'Setup failed. Check the service environment and server logs.');
-status.textContent='Agent tools connected successfully. Open the website to start a browser chat or voice session. SMS mode: '+data.smsProvider+'. Telephone calls still require working Vobiz SIP routing.';
+if(!response.ok)throw new Error(data.error||'Setup failed. Check the service environment.');
+status.textContent='Agent tools connected. SMS mode: '+data.smsProvider+'. Telephone calls still require working Vobiz SIP routing.';
 }catch(error){status.textContent=error.message;}
 finally{button.disabled=false;input.value='';}
 });

@@ -59,7 +59,12 @@ export async function handleBrowserAgent(req, res, path, origin) {
       if (!signed.signed_url) throw new Error('ElevenLabs did not issue a conversation URL.')
       json(res, 200, { signedUrl: signed.signed_url, sessionToken: issueBrowserToken() })
     } catch (err) {
-      json(res, err.status || 503, { error: err.status ? err.message : 'ElevenLabs is unavailable on this host. Check the connected account or ELEVENLABS_API_KEY.' })
+      console.warn('[dayone] agent session unavailable', err.status || 'network')
+      json(res, err.status === 429 ? 429 : 503, {
+        error: err.status === 429
+          ? 'The agent is busy. Please try again shortly.'
+          : 'The agent is temporarily unavailable. Please try again later.',
+      })
     }
     return true
   }

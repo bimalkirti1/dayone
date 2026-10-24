@@ -256,8 +256,7 @@ function BuilderConversation({
             {(error || toolError) && (
               <div role="alert" className="rounded-[18px] border border-[#D8A08B] bg-[#FFF5F0] p-4 text-[14px] text-[#773D2A]">
                 <p>{error || toolError}</p>
-                <p className="mt-1 text-[13px]">Check the DayOne agent configuration, then try again.</p>
-                <a href="/setup.html" className="mt-2 inline-flex text-[13px] font-semibold underline underline-offset-4">Open builder setup</a>
+                <p className="mt-1 text-[13px]">Please try again later if the agent is unavailable.</p>
                 {error && !connected && <button type="button" onClick={retry} className="btn btn-white ml-3 mt-3 h-9 px-4 text-[13px]">Try again</button>}
               </div>
             )}

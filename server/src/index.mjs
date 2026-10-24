@@ -284,6 +284,27 @@ async function handle(req, res) {
 
   /* ---- Static ---- */
   if (method === 'GET') {
+    // Legacy public link must never send customers into owner configuration.
+    if (path === '/setup.html') {
+      res.writeHead(302, { location: '/', 'cache-control': 'no-store' })
+      return res.end()
+    }
+    if (path === '/admin/setup') {
+      if (!config.toolSecret) return json(res, 404, { error: 'Not found' })
+      const basic = req.headers.authorization || ''
+      const credentials = basic.startsWith('Basic ') ? Buffer.from(basic.slice(6), 'base64').toString() : ''
+      const separator = credentials.indexOf(':')
+      const owner = credentials.slice(0, separator) === 'owner'
+      const secret = separator >= 0 ? credentials.slice(separator + 1) : ''
+      if (!owner || !authorised({ headers: { 'x-dayone-secret': secret } })) {
+        return json(res, 401, { error: 'Owner access required' }, {
+          'www-authenticate': 'Basic realm="DayOne owner settings", charset="UTF-8"',
+        })
+      }
+      res.setHeader('cache-control', 'no-store')
+      if (await serveStatic(res, join(here, '../private'), '/setup.html')) return
+      return json(res, 404, { error: 'Not found' })
+    }
     if (path === '/' && await serveStatic(res, FRONTEND_DIR, '/index.html')) return
     if (await serveStatic(res, PUBLIC_DIR, path === '/' ? '/console.html' : path)) return
     if (await serveStatic(res, FRONTEND_DIR, path)) return

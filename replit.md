@@ -4,6 +4,8 @@ Keep the existing React/Vite frontend and plain Node backend structure.
 The user requires an actual working product, not a scripted demo. Primary
 builder interactions must use the backend and real generated site links;
 do not present simulated login, phone calls, publishing, or SMS as working.
+Customer-facing pages must never show or link to provider credentials and
+owner setup instructions. Owner settings belong behind authentication.
 
 ## Commands
 - Install dependencies using the existing pnpm lockfile.

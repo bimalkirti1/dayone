@@ -62,8 +62,10 @@ pnpm test:integrations            # browser tokens and provider payloads
 2. Enter ELEVENLABS_API_KEY in Render's secure Blueprint form. Replit's
    ElevenLabs connection does not automatically transfer to Render.
 3. Render generates TOOL_SECRET and SESSION_SECRET. Wait for the service to say Live.
-4. Open `/setup.html` on that service, enter its TOOL_SECRET from Render
-   Environment, and click Connect. This configures both existing agents:
+4. Open `/admin/setup` on that service. Authenticate with username `owner`
+   and its TOOL_SECRET from Render Environment as the password. This owner-only
+   page is not linked from customer screens. Enter TOOL_SECRET in its setup
+   form and click Connect. This configures both existing agents:
    browser client tools and telephone webhook tools.
 5. This blueprint uses the free plan, no disk, and `SMS_PROVIDER=log`.
    It does not send real SMS until you configure Vobiz separately.

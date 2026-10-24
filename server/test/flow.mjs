@@ -72,6 +72,14 @@ async function main() {
     check('health responds', health.status === 200 && health.data?.ok === true)
     check('six art directions registered', health.data?.directions?.length === 6, String(health.data?.directions?.length))
     check('tools are protected when a secret is set', health.data?.toolsProtected === true)
+    const legacySetup = await fetch(`${BASE}/setup.html`, { redirect: 'manual' })
+    check('legacy setup link redirects customers home', legacySetup.status === 302 && legacySetup.headers.get('location') === '/')
+    const privateSetup = await fetch(`${BASE}/admin/setup`)
+    check('owner settings require authentication', privateSetup.status === 401)
+    const ownedSetup = await fetch(`${BASE}/admin/setup`, {
+      headers: { authorization: `Basic ${Buffer.from(`owner:${SECRET}`).toString('base64')}` },
+    })
+    check('authenticated owner can open private settings', ownedSetup.status === 200 && /Owner settings/.test(await ownedSetup.text()))
 
     /* ---- guardrails on the web chat ---- */
     const open = await api('/api/chat', { method: 'POST', body: { message: '' } })
