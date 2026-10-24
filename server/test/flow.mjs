@@ -144,7 +144,7 @@ async function main() {
     check('plumber page leads with the phone number', plumberHtml.includes('tel:+919822233344'))
 
     const sent = await api('/api/voice/tools/send_link', { method: 'POST', secret: SECRET, body: { conversation_id: convoId } })
-    check('send_link reports delivery', sent.data?.ok === true, JSON.stringify(sent.data).slice(0, 160))
+    check('send_link never claims test-mode SMS was delivered', sent.data?.ok === false && sent.data?.status === 'logged', JSON.stringify(sent.data).slice(0, 160))
     check('send_link addressed the caller', sent.data?.to === '+919822233344', String(sent.data?.to))
 
     const deliveriesList = await api('/api/deliveries', { secret: SECRET })

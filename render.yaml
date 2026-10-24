@@ -1,8 +1,8 @@
 # Render blueprint for DayOne.
 #
 # One web service serves three things: the API the voice agent calls, the
-# websites it publishes, and the marketing front end. The server itself has
-# no dependencies, so the build step only exists to compile the front end.
+# websites it publishes, and the frontend. Dependencies include the browser
+# ElevenLabs SDK and the server-side Replit connector SDK.
 services:
   - type: web
     name: dayone
@@ -20,6 +20,12 @@ services:
       # Render generates this; copy it into the agent's tool headers.
       - key: TOOL_SECRET
         generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      # Required for ElevenLabs on Render. Replit's connected account is
+      # available only while running on Replit, not on another host.
+      - key: ELEVENLABS_API_KEY
+        sync: false
 
       # Temporary storage only: free instances lose these files on restart.
       - key: DATA_DIR

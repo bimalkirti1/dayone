@@ -5,12 +5,12 @@ is live and texted to their phone.
 
 This repo holds two halves:
 
-- `src/` — the React + Vite frontend and anonymous browser builder. The
-  builder sends real answers to `/api/chat` and displays the generated site.
-- `server/` — the service that does the work. **No dependencies.** Plain Node 22.
+- `src/` — React + Vite frontend with real ElevenLabs text/voice sessions.
+- `server/` — Node 22 API, generated websites, and server-side provider access.
 
-The browser flow does not require phone-service credentials. Microphone input,
-where the browser supports it, transcribes answers; it is not an ElevenLabs call.
+The browser uses the ElevenLabs React SDK and client tools. On Replit, the
+connected account issues signed sessions through the server. On another host,
+set ELEVENLABS_API_KEY server-side; it must never enter the frontend bundle.
 Live telephone publishing additionally requires the deployed API URL, protected
 webhook tools on the agent, working Vobiz SIP routing, and SMS configuration.
 Do not treat a successful browser build as verification of the phone flow.
@@ -43,15 +43,22 @@ need an Anthropic or OpenAI key to run it.
 ```bash
 node server/src/index.mjs          # no install step; nothing to fetch
 open http://localhost:3000         # a chat that builds a real page
-node server/test/flow.mjs          # 43 end-to-end checks
+pnpm test:flow                    # offline backend flow checks
+pnpm test:integrations            # browser tokens and provider payloads
 ```
 
 ## Deploy to Render
 
-1. Push this repo to GitHub.
-2. Render → **New → Blueprint**, pick the repo. `render.yaml` is read automatically.
-3. Render generates `TOOL_SECRET`. Copy it — the agent needs it.
-4. This blueprint uses the free plan, no disk, and `SMS_PROVIDER=log`.
+1. Use [Deploy free test on Render](https://render.com/deploy?repo=https://github.com/bimalkirti1/dayone/tree/setup/render-free-test).
+   It selects the `setup/render-free-test` branch, not the old demo on `main`.
+   If a service already exists, update its branch instead of creating duplicates.
+2. Enter ELEVENLABS_API_KEY in Render's secure Blueprint form. Replit's
+   ElevenLabs connection does not automatically transfer to Render.
+3. Render generates TOOL_SECRET and SESSION_SECRET. Wait for the service to say Live.
+4. Open `/setup.html` on that service, enter its TOOL_SECRET from Render
+   Environment, and click Connect. This configures both existing agents:
+   browser client tools and telephone webhook tools.
+5. This blueprint uses the free plan, no disk, and `SMS_PROVIDER=log`.
    It does not send real SMS until you configure Vobiz separately.
 
 **Temporary testing only.** Generated sites and saved conversations are lost
@@ -63,7 +70,13 @@ The built frontend is served at `/`; the backend chat console is at
 `/console.html`. A frontend build failure now fails the deployment rather
 than silently shipping without the frontend.
 
-## Wire up the voice agent
+## Wire up the telephone agent
+
+The protected setup page above is the recommended route. It preserves the
+current voice and model and does not place calls. Browser client tools cannot
+run during a SIP telephone call; keep the two agents separate.
+
+For manual dashboard setup:
 
 `GET /api/voice/agent-config` returns everything the dashboard needs, already
 pointed at your deployment: the first message, the full prompt, and the three

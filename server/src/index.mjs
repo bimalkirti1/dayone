@@ -21,6 +21,8 @@ import { checkInput } from './guardrail.mjs'
 import { sendLink } from './sms.mjs'
 import { AGENT_PROMPT, FIRST_MESSAGE, toolDefinitions } from './agent.mjs'
 import { DIRECTIONS } from './gen/directions.mjs'
+import { handleBrowserAgent } from './browser-agent.mjs'
+import { configureDayOneAgents } from './elevenlabs.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const PUBLIC_DIR = join(here, '..', 'public')
@@ -51,7 +53,7 @@ const save = async (s) => {
 
 /** Tool calls must carry the shared secret once one is configured. */
 function authorised(req) {
-  if (config.openTools) return true
+  if (!config.toolSecret) return false
   const given = req.headers['x-dayone-secret'] || req.headers['x-api-key'] || ''
   const want = config.toolSecret
   if (given.length !== want.length) return false
@@ -71,7 +73,7 @@ async function handle(req, res) {
   if (method === 'OPTIONS') {
     res.writeHead(204, {
       'access-control-allow-origin': '*',
-      'access-control-allow-headers': 'content-type, x-dayone-secret',
+      'access-control-allow-headers': 'content-type, x-dayone-secret, x-dayone-session',
       'access-control-allow-methods': 'GET, POST, OPTIONS',
     })
     return res.end()
@@ -86,9 +88,23 @@ async function handle(req, res) {
       publicUrl: origin,
       sms: config.sms.provider,
       llm: config.llmReady ? config.llm.model : 'off',
-      toolsProtected: !config.openTools,
+      toolsProtected: true,
+      toolsConfigured: Boolean(config.toolSecret),
       directions: Object.keys(DIRECTIONS),
     })
+  }
+
+  if (await handleBrowserAgent(req, res, path, origin)) return
+
+  if (path === '/api/voice/setup' && method === 'POST') {
+    if (!config.toolSecret) return json(res, 503, { error: 'Set TOOL_SECRET before configuring agents.' })
+    if (!authorised(req)) return json(res, 401, { error: 'Bad or missing x-dayone-secret' })
+    try {
+      const agents = await configureDayOneAgents(config.publicUrl)
+      return json(res, 200, { ok: true, agents, smsProvider: config.sms.provider })
+    } catch (err) {
+      return json(res, err.status || 502, { error: err.status ? err.message : 'Could not connect agents. Check ElevenLabs access and the service environment.' })
+    }
   }
 
   /* ---- Published sites ---- */
@@ -208,12 +224,14 @@ async function handle(req, res) {
 
       const record = await sendLink({ to, name: session.brief?.businessName, url: session.url })
       await save(session)
-      const went = record.status === 'sent' || record.status === 'logged'
+      const went = record.status === 'sent'
       return json(res, 200, {
         ok: went,
         status: record.status,
         to,
-        say: went ? `Sent to ${spaced(to)}. It should arrive in a moment.` : 'The message did not go through.',
+        say: went ? `Sent to ${spaced(to)}. It should arrive in a moment.`
+          : record.status === 'logged' ? 'SMS is in test mode. The link was recorded but no text message was sent.'
+          : 'The message did not go through.',
       })
     }
 
@@ -321,7 +339,7 @@ const dir = await initStore()
 server.listen(config.port, config.host, () => {
   console.log(`[dayone] listening on http://${config.host}:${config.port}`)
   console.log(`[dayone] data in ${dir}`)
-  console.log(`[dayone] sms: ${config.sms.provider} · llm: ${config.llmReady ? config.llm.model : 'off'} · tools ${config.openTools ? 'OPEN (set TOOL_SECRET)' : 'protected'}`)
+  console.log(`[dayone] sms: ${config.sms.provider} · llm: ${config.llmReady ? config.llm.model : 'off'} · tools ${config.toolSecret ? 'protected' : 'disabled (set TOOL_SECRET)'}`)
 })
 
 export { server, handle }

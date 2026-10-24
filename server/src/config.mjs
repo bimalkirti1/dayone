@@ -20,14 +20,10 @@ export const config = {
   /** Shared secret ElevenLabs sends on every tool call. */
   toolSecret: env.TOOL_SECRET || '',
 
-  /** Treat requests as authenticated when no secret is configured (local dev). */
-  get openTools() {
-    return !this.toolSecret
-  },
-
   elevenlabs: {
     apiKey: env.ELEVENLABS_API_KEY || '',
-    agentId: env.ELEVENLABS_AGENT_ID || '',
+    agentId: env.ELEVENLABS_AGENT_ID || 'agent_6801m5pmg11zftb9j4rs27y698c0',
+    browserAgentId: env.ELEVENLABS_BROWSER_AGENT_ID || 'agent_5201m5pmfswqebzaj1sr5c6eb5pc',
   },
 
   /** Link delivery. 'log' just records it, which is what tests use. */
