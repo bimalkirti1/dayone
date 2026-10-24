@@ -44,13 +44,17 @@ node server/test/flow.mjs          # 43 end-to-end checks
 1. Push this repo to GitHub.
 2. Render → **New → Blueprint**, pick the repo. `render.yaml` is read automatically.
 3. Render generates `TOOL_SECRET`. Copy it — the agent needs it.
-4. Add the secrets marked `sync: false` in the dashboard when you have them.
+4. This blueprint uses the free plan, no disk, and `SMS_PROVIDER=log`.
+   It does not send real SMS until you configure Vobiz separately.
 
-**On persistence.** `render.yaml` mounts a 1 GB disk so published sites
-survive deploys and restarts, which is why it asks for the `starter` plan —
-free instances cannot mount a disk. If you ever switch to `free`, delete the
-`disk:` block and set `DATA_DIR=./server/data`, and know that every deploy
-wipes the sites and links you have already texted stop working.
+**Temporary testing only.** Generated sites and saved conversations are lost
+on redeploy or restart. Free services also sleep when idle, which can delay
+voice webhooks. For real clients, use an always-on paid service with a
+persistent disk and set `DATA_DIR` to its mount path.
+
+The built frontend is served at `/`; the backend chat console is at
+`/console.html`. A frontend build failure now fails the deployment rather
+than silently shipping without the frontend.
 
 ## Wire up the voice agent
 
@@ -59,7 +63,7 @@ pointed at your deployment: the first message, the full prompt, and the three
 tool schemas with the right URLs and headers.
 
 ```bash
-curl https://your-app.onrender.com/api/voice/agent-config
+curl -H "x-dayone-secret: $TOOL_SECRET" https://your-app.onrender.com/api/voice/agent-config
 ```
 
 In ElevenLabs → Agents:
@@ -69,7 +73,10 @@ In ElevenLabs → Agents:
   header `x-dayone-secret` set to your `TOOL_SECRET`.
 - **Phone number**: attach your Vobiz number (or Twilio) to the agent.
 
-Then set `SMS_PROVIDER=vobiz` and `VOBIZ_API_KEY` so the link gets sent.
+Then set `SMS_PROVIDER=vobiz`, `VOBIZ_AUTH_ID`, `VOBIZ_AUTH_TOKEN`, and
+`VOBIZ_SENDER_ID` (a Vobiz messaging-enabled number) so the link gets sent.
+Set these in Render's Environment settings; Replit Secrets do not
+automatically transfer to Render. Do not paste credentials into chat.
 
 ## The guardrails
 

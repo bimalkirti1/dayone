@@ -248,6 +248,7 @@ async function handle(req, res) {
 
   /* ---- Everything needed to configure the agent ---- */
   if (path === '/api/voice/agent-config' && method === 'GET') {
+    if (!authorised(req)) return json(res, 401, { error: 'Bad or missing x-dayone-secret' })
     return json(res, 200, {
       first_message: FIRST_MESSAGE,
       prompt: AGENT_PROMPT,
@@ -264,6 +265,7 @@ async function handle(req, res) {
 
   /* ---- Static ---- */
   if (method === 'GET') {
+    if (path === '/' && await serveStatic(res, FRONTEND_DIR, '/index.html')) return
     if (await serveStatic(res, PUBLIC_DIR, path === '/' ? '/console.html' : path)) return
     if (await serveStatic(res, FRONTEND_DIR, path)) return
     // The front end is a single-page app, so unknown paths fall back to it.

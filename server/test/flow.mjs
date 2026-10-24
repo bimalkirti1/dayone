@@ -177,7 +177,9 @@ async function main() {
     check('no inline event handler survived', !/onerror=/i.test(xssHtml))
 
     /* ---- agent config ---- */
-    const cfg = await api('/api/voice/agent-config')
+    const deniedConfig = await api('/api/voice/agent-config')
+    check('agent config does not expose the tool secret anonymously', deniedConfig.status === 401)
+    const cfg = await api('/api/voice/agent-config', { secret: SECRET })
     check('agent config exposes a prompt', (cfg.data?.prompt || '').length > 400)
     check('agent config exposes three tools', cfg.data?.tools?.length === 3)
     check('tool urls point at this deployment', cfg.data?.tools?.[0]?.api_schema?.url?.startsWith(BASE))

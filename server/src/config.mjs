@@ -35,7 +35,8 @@ export const config = {
     provider: (env.SMS_PROVIDER || 'log').toLowerCase(),
     from: env.SMS_FROM || 'DayOne',
     vobiz: {
-      apiKey: env.VOBIZ_API_KEY || '',
+      authId: env.VOBIZ_AUTH_ID || '',
+      authToken: env.VOBIZ_AUTH_TOKEN || '',
       baseUrl: (env.VOBIZ_BASE_URL || 'https://api.vobiz.ai').replace(/\/$/, ''),
       senderId: env.VOBIZ_SENDER_ID || '',
     },

@@ -20,15 +20,26 @@ export function linkMessage({ name, url }) {
   return `${who} Here it is: ${url}\n\nOpen it, send it to anyone, and call back any time to change it. — DayOne`
 }
 
-async function sendVobiz({ to, body }) {
-  const { apiKey, baseUrl, senderId } = config.sms.vobiz
-  if (!apiKey) throw new Error('VOBIZ_API_KEY is not set')
+async function sendVobiz({ to, body, idempotencyKey }) {
+  const { authId, authToken, baseUrl, senderId } = config.sms.vobiz
+  if (!authId || !authToken) throw new Error('VOBIZ_AUTH_ID and VOBIZ_AUTH_TOKEN are not set')
+  if (!senderId) throw new Error('VOBIZ_SENDER_ID is not set')
   const t = timeout(12000)
   try {
-    const res = await fetch(`${baseUrl}/v1/messages`, {
+    const res = await fetch(`${baseUrl}/api/v1/sms/messages`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ to, text: body, ...(senderId ? { from: senderId } : {}) }),
+      headers: {
+        'content-type': 'application/json',
+        'X-Auth-ID': authId,
+        'X-Auth-Token': authToken,
+      },
+      body: JSON.stringify({
+        from: senderId,
+        to: [to],
+        channel: 'sms',
+        text: body,
+        idempotencyKey,
+      }),
       signal: t.signal,
     })
     const text = await res.text()
@@ -85,7 +96,8 @@ export async function sendLink({ to, name, url }) {
 
   try {
     if (!to) throw new Error('No phone number on the brief')
-    if (config.sms.provider === 'vobiz') Object.assign(record, await sendVobiz({ to, body }), { status: 'sent' })
+    if (config.sms.provider === 'vobiz')
+      Object.assign(record, await sendVobiz({ to, body, idempotencyKey: record.id }), { status: 'sent' })
     else if (config.sms.provider === 'twilio') Object.assign(record, await sendTwilio({ to, body }), { status: 'sent' })
     else record.status = 'logged'
   } catch (err) {

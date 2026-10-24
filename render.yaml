@@ -7,10 +7,10 @@ services:
   - type: web
     name: dayone
     runtime: node
-    plan: starter        # a disk requires a paid instance; free plans cannot mount one
+    plan: free
     region: singapore          # closest to callers in India
     healthCheckPath: /health
-    buildCommand: npm install --no-audit --no-fund && (npm run build || echo "front end build skipped - API and published sites still served")
+    buildCommand: npm install --no-audit --no-fund && npm run build
     startCommand: node server/src/index.mjs
     envVars:
       - key: NODE_VERSION
@@ -21,33 +21,16 @@ services:
       - key: TOOL_SECRET
         generateValue: true
 
-      # Where published sites are written. See the note about the disk below.
+      # Temporary storage only: free instances lose these files on restart.
       - key: DATA_DIR
-        value: /var/data
+        value: ./server/data
 
       # Link delivery: 'log' records without sending. Switch to 'vobiz' or
       # 'twilio' once the credentials below are set in the dashboard.
       - key: SMS_PROVIDER
         value: log
 
-      # Secrets: set these in the Render dashboard, never in this file.
-      - key: ELEVENLABS_API_KEY
-        sync: false
-      - key: ELEVENLABS_AGENT_ID
-        sync: false
-      - key: VOBIZ_API_KEY
-        sync: false
-      - key: VOBIZ_SENDER_ID
-        sync: false
-      - key: LLM_BASE_URL
-        sync: false
-      - key: LLM_API_KEY
-        sync: false
-
-    # Published sites live on disk, so a link you texted a customer keeps
-    # working across deploys and restarts. This is why the plan above is
-    # 'starter' rather than 'free': free instances cannot mount a disk.
-    disk:
-      name: dayone-data
-      mountPath: /var/data
-      sizeGB: 1
+    # No disk: this is a free, temporary test deployment.
+    # Add VOBIZ_AUTH_ID, VOBIZ_AUTH_TOKEN and VOBIZ_SENDER_ID in Render's
+    # Environment settings before switching SMS_PROVIDER to vobiz.
+    # Optional ElevenLabs/LLM settings are documented in server/.env.example.
