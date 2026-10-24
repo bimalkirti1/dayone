@@ -90,6 +90,9 @@ export async function configureDayOneAgents(origin) {
     await elevenlabsRequest(`/v1/convai/agents/${encodeURIComponent(agentId)}`, {
       method: 'PATCH',
       body: JSON.stringify({
+        ...(channel === 'browser' ? {
+          platform_settings: { auth: { ...current.platform_settings?.auth, enable_auth: true } },
+        } : {}),
         conversation_config: {
           agent: {
             ...current.conversation_config.agent,

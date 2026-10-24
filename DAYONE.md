@@ -11,6 +11,13 @@ This repo holds two halves:
 The browser uses the ElevenLabs React SDK and client tools. On Replit, the
 connected account issues signed sessions through the server. On another host,
 set ELEVENLABS_API_KEY server-side; it must never enter the frontend bundle.
+Browser-agent authentication is enabled to prevent direct public agent-ID
+connections. Session issuance ignores untrusted forwarded IP headers and has
+an independent, persisted single-service budget: 6/hour and 20/day by default.
+Use AGENT_SESSION_HOURLY_LIMIT and AGENT_SESSION_DAILY_LIMIT to change this
+deliberately. Free-host storage resets also reset local budgets; configure
+ElevenLabs account-side usage limits and alerts as an additional safeguard.
+Use shared atomic budget storage before running multiple server instances.
 Live telephone publishing additionally requires the deployed API URL, protected
 webhook tools on the agent, working Vobiz SIP routing, and SMS configuration.
 Do not treat a successful browser build as verification of the phone flow.

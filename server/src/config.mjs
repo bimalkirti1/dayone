@@ -25,6 +25,10 @@ export const config = {
     agentId: env.ELEVENLABS_AGENT_ID || 'agent_6801m5pmg11zftb9j4rs27y698c0',
     browserAgentId: env.ELEVENLABS_BROWSER_AGENT_ID || 'agent_5201m5pmfswqebzaj1sr5c6eb5pc',
   },
+  agentBudget: {
+    hourly: Math.max(1, parseInt(env.AGENT_SESSION_HOURLY_LIMIT || '6', 10) || 6),
+    daily: Math.max(1, parseInt(env.AGENT_SESSION_DAILY_LIMIT || '20', 10) || 20),
+  },
 
   /** Link delivery. 'log' just records it, which is what tests use. */
   sms: {

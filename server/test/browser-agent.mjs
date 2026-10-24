@@ -12,11 +12,11 @@ test('browser tools isolate sessions, require signed tokens, and really publish'
   const { handleBrowserAgent, issueBrowserToken, verifyBrowserToken } = await import('../src/browser-agent.mjs')
   const { browserToolDefinitions } = await import('../src/elevenlabs.mjs')
   await initStore()
-  async function call(path, token, body = {}) {
+  async function call(path, token, body = {}, headers = {}, peer = 'test') {
     const req = Readable.from([Buffer.from(JSON.stringify(body))])
     req.method = 'POST'
-    req.headers = { 'x-dayone-session': token }
-    req.socket = { remoteAddress: 'test' }
+    req.headers = { 'x-dayone-session': token, ...headers }
+    req.socket = { remoteAddress: peer }
     let status, data
     const res = {
       writeHead(code) { status = code },
@@ -46,6 +46,37 @@ test('browser tools isolate sessions, require signed tokens, and really publish'
     assert.equal(published.data.ok, true)
     assert.match(published.data.url, /^https:\/\/example.test\/s\//)
     assert.equal((await call('/api/agent/tools/publish_site', second)).data.ok, false)
+    const { default: config } = await import('../src/config.mjs')
+    const { usageLimits } = await import('../src/store.mjs')
+    const oldFetch = globalThis.fetch
+    const oldKey = config.elevenlabs.apiKey
+    const oldBudget = config.agentBudget
+    let providerRequests = 0
+    try {
+      config.elevenlabs.apiKey = 'test-key-not-a-credential'
+      config.agentBudget = { hourly: 3, daily: 3 }
+      globalThis.fetch = async () => {
+        providerRequests++
+        return new Response(JSON.stringify({ signed_url: 'wss://example.test' }), { status: 200 })
+      }
+      const attempts = await Promise.all(Array.from({ length: 20 }, (_, i) =>
+        call('/api/agent/session', '', {}, { 'x-forwarded-for': `192.0.2.${i}` }, `different-peer-${i}`)))
+      assert.equal(attempts.filter(r => r.status === 200).length, 3)
+      assert.equal(attempts.filter(r => r.status === 429).length, 17)
+      assert.equal(providerRequests, 3, 'rotating all IPs cannot bypass the atomic account budget')
+      assert.equal((await usageLimits.get('elevenlabs-browser')).daily, 3)
+      config.agentBudget = { hourly: 100, daily: 100 }
+      await usageLimits.put('elevenlabs-browser', {})
+      for (let i = 0; i < 13; i++) {
+        const attempt = await call('/api/agent/session', '', {}, { 'x-forwarded-for': `198.51.100.${i}` }, 'same-trusted-peer')
+        assert.equal(attempt.status, i < 12 ? 200 : 429, 'forwarded headers cannot change the socket-peer identity')
+      }
+      assert.equal(providerRequests, 15)
+    } finally {
+      globalThis.fetch = oldFetch
+      config.elevenlabs.apiKey = oldKey
+      config.agentBudget = oldBudget
+    }
     assert.equal((await call('/api/agent/tools/send_link', token)).status, 404)
     assert.equal((await call('/api/agent/tools/save_brief', second, { what: 'escort services booking' })).data.refused, true)
     assert.equal((await call('/api/agent/tools/publish_site', second)).data.ok, false)

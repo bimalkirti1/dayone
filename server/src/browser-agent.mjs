@@ -6,6 +6,7 @@ import { normaliseBrief } from './brief.mjs'
 import { checkInput } from './guardrail.mjs'
 import { publishBrief } from './publish.mjs'
 import config from './config.mjs'
+import { reserveAgentSession } from './agent-budget.mjs'
 
 const signingKey = process.env.SESSION_SECRET || randomBytes(32).toString('hex')
 const rates = new Map()
@@ -42,10 +43,16 @@ export async function handleBrowserAgent(req, res, path, origin) {
   if (req.method !== 'POST') {
     json(res, 405, { error: 'POST required' }); return true
   }
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress
+  // Forwarded headers are untrusted. Behind a proxy this intentionally shares
+  // a conservative peer limit rather than accepting spoofable client IPs.
+  const ip = req.socket.remoteAddress || 'unknown'
   if (path === '/api/agent/session') {
     if (!allow(`session:${ip}`, 12, 3600000)) {
       json(res, 429, { error: 'Too many agent sessions. Please try again later.' }); return true
+    }
+    if (!await reserveAgentSession()) {
+      json(res, 429, { error: 'This site’s hourly or daily agent session budget is exhausted. Please try again later.' })
+      return true
     }
     try {
       const signed = await elevenlabsRequest(`/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(config.elevenlabs.browserAgentId)}`)

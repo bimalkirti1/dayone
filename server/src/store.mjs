@@ -72,6 +72,12 @@ export const deliveries = {
   list: () => list('deliveries'),
 }
 
+/** Private provider budgets: never exposed as sessions or site records. */
+export const usageLimits = {
+  get: (id) => get('usage-limits', id),
+  put: (id, value) => put('usage-limits', id, value),
+}
+
 export async function initStore() {
   await Promise.all([ensure('sessions'), ensure('sites'), ensure('deliveries')])
   return config.dataDir
