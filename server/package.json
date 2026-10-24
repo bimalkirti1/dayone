@@ -1,0 +1,11 @@
+{
+  "name": "dayone-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DayOne backend: voice-to-website. Zero runtime dependencies.",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "test": "node test/flow.mjs"
+  }
+}

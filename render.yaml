@@ -1,0 +1,53 @@
+# Render blueprint for DayOne.
+#
+# One web service serves three things: the API the voice agent calls, the
+# websites it publishes, and the marketing front end. The server itself has
+# no dependencies, so the build step only exists to compile the front end.
+services:
+  - type: web
+    name: dayone
+    runtime: node
+    plan: starter        # a disk requires a paid instance; free plans cannot mount one
+    region: singapore          # closest to callers in India
+    healthCheckPath: /health
+    buildCommand: npm install --no-audit --no-fund && (npm run build || echo "front end build skipped - API and published sites still served")
+    startCommand: node server/src/index.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      # Shared secret the ElevenLabs agent sends on every tool call.
+      # Render generates this; copy it into the agent's tool headers.
+      - key: TOOL_SECRET
+        generateValue: true
+
+      # Where published sites are written. See the note about the disk below.
+      - key: DATA_DIR
+        value: /var/data
+
+      # Link delivery: 'log' records without sending. Switch to 'vobiz' or
+      # 'twilio' once the credentials below are set in the dashboard.
+      - key: SMS_PROVIDER
+        value: log
+
+      # Secrets: set these in the Render dashboard, never in this file.
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_AGENT_ID
+        sync: false
+      - key: VOBIZ_API_KEY
+        sync: false
+      - key: VOBIZ_SENDER_ID
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+
+    # Published sites live on disk, so a link you texted a customer keeps
+    # working across deploys and restarts. This is why the plan above is
+    # 'starter' rather than 'free': free instances cannot mount a disk.
+    disk:
+      name: dayone-data
+      mountPath: /var/data
+      sizeGB: 1

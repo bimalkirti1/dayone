@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DayOne · Build by talking</title>
+<meta name="description" content="Tell DayOne what you do and it builds your website while you talk.">
+<style>
+  :root{
+    --paper:#fbf8f2; --ink:#2b2621; --brown:#534c43; --grey:#73706b;
+    --line:#ece5d8; --amber:#ffaa00; --cream:#ffefa0;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--brown);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin-inline:auto;padding:28px 20px 60px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:8px 22px}
+  .mark{font-weight:600;font-size:18px;letter-spacing:-.02em;color:var(--ink)}
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#fff;
+    box-shadow:inset 0 0 0 1px var(--line);font-size:13px;color:var(--grey)}
+  .dot{width:7px;height:7px;border-radius:999px;background:#39a85b}
+  h1{margin:0 0 6px;font-size:clamp(1.7rem,4.6vw,2.3rem);line-height:1.1;letter-spacing:-.03em;color:var(--ink);font-weight:600}
+  .sub{margin:0 0 24px;color:var(--grey);max-width:52ch}
+  .panel{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(83,76,67,.08);overflow:hidden}
+  .log{padding:18px;display:grid;gap:12px;min-height:220px;max-height:46vh;overflow-y:auto}
+  .msg{max-width:84%;padding:11px 15px;border-radius:16px;font-size:15.5px;white-space:pre-wrap}
+  .from-dayone{justify-self:start;background:#fff8e4;color:var(--ink);border-bottom-left-radius:5px}
+  .from-you{justify-self:end;background:var(--ink);color:#fff;border-bottom-right-radius:5px}
+  .blocked{background:#fdeceb;color:#8c2f26}
+  form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
+  input{flex:1;min-width:0;height:48px;padding:0 16px;border:0;border-radius:14px;background:var(--paper);
+    font:inherit;color:var(--ink);outline:none;box-shadow:inset 0 0 0 1px var(--line)}
+  input:focus{box-shadow:inset 0 0 0 1.5px var(--amber)}
+  button{height:48px;padding:0 20px;border:0;border-radius:14px;background:var(--amber);color:var(--ink);
+    font:600 15px var(--sans);cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .done{margin-top:18px;padding:18px;border-radius:18px;background:var(--cream);color:var(--ink);display:none}
+  .done a{color:var(--ink);font-weight:600}
+  .hint{margin-top:22px;font-size:13.5px;color:var(--grey)}
+  .hint code{background:#fff;padding:2px 6px;border-radius:6px;box-shadow:inset 0 0 0 1px var(--line)}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="mark">DayOne</span>
+    <span class="pill"><span class="dot"></span><span id="status">checking…</span></span>
+  </header>
+
+  <h1>Tell me what you do.</h1>
+  <p class="sub">I'll ask a few questions and build your page while we talk. The same questions the phone line asks.</p>
+
+  <div class="panel">
+    <div class="log" id="log" aria-live="polite" aria-label="Conversation"></div>
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="I bake cakes at home in Indiranagar" aria-label="Your message">
+      <button id="send" type="submit">Send</button>
+    </form>
+  </div>
+
+  <div class="done" id="done"></div>
+  <p class="hint">Operator: <code>GET /api/sites</code> lists published pages · <code>GET /api/voice/agent-config</code> gives the agent prompt and tool schemas.</p>
+</div>
+
+<script type="module">
+const log = document.getElementById('log')
+const form = document.getElementById('form')
+const input = document.getElementById('input')
+const send = document.getElementById('send')
+const done = document.getElementById('done')
+let sessionId = null
+
+const add = (text, who, blocked) => {
+  const el = document.createElement('div')
+  el.className = `msg from-${who}` + (blocked ? ' blocked' : '')
+  el.textContent = text
+  log.appendChild(el)
+  log.scrollTop = log.scrollHeight
+}
+
+async function post(message) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sessionId, message }),
+  })
+  if (!res.ok) throw new Error(`Server said ${res.status}`)
+  return res.json()
+}
+
+async function boot() {
+  try {
+    const health = await (await fetch('/health')).json()
+    document.getElementById('status').textContent = `live · ${health.directions.length} looks`
+  } catch { document.getElementById('status').textContent = 'offline' }
+  try {
+    const first = await post('')
+    sessionId = first.sessionId
+    add(first.reply, 'dayone')
+  } catch (err) { add('I could not reach the server. ' + err.message, 'dayone', true) }
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const text = input.value.trim()
+  if (!text) return
+  add(text, 'you')
+  input.value = ''
+  send.disabled = true
+  try {
+    const out = await post(text)
+    sessionId = out.sessionId
+    add(out.reply, 'dayone', out.blocked)
+    if (out.ready && out.url) {
+      done.style.display = 'block'
+      done.innerHTML = `Your page is live — <a href="${out.url}" target="_blank" rel="noopener">${out.url}</a><br><small>Built in the ${out.direction} look.</small>`
+    }
+  } catch (err) {
+    add('Something went wrong: ' + err.message, 'dayone', true)
+  } finally {
+    send.disabled = false
+    input.focus()
+  }
+})
+
+boot()
+</script>
+</body>
+</html>

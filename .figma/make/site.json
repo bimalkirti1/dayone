@@ -1,0 +1,10 @@
+{
+  "description": "A friendly, voice-first website builder helps small business owners create, customize, and share a polished website without technical skills.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
