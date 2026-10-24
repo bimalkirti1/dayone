@@ -57,7 +57,7 @@ async function waitForBoot(tries = 60) {
 async function main() {
   const dataDir = await mkdtemp(join(tmpdir(), 'dayone-test-'))
   const child = spawn(process.execPath, [join(here, '..', 'src', 'index.mjs')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: dataDir, TOOL_SECRET: SECRET, SMS_PROVIDER: 'log', PUBLIC_URL: BASE },
+    env: { ...process.env, HOST: '127.0.0.1', PORT: String(PORT), DATA_DIR: dataDir, TOOL_SECRET: SECRET, SMS_PROVIDER: 'log', PUBLIC_URL: BASE },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   const logs = []
