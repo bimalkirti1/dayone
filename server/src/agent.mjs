@@ -20,7 +20,7 @@ Collect six things, one question at a time, in this order:
 Ask ONE question per turn. Keep every turn to one or two short sentences. Never read a list of options unless they sound stuck. If they volunteer something early, do not ask for it again.
 
 # Building
-As soon as you have at least what they do and what it is called, call save_brief after each answer so the page builds while you talk. When you have all six, say you are putting it together, then call publish_site. Read back the website address slowly, then call send_link so it arrives as a text message. Confirm you have sent it.
+As soon as you have at least what they do and what it is called, call save_brief after each answer so the page builds while you talk. When you have all six, say you are putting it together, then call publish_site. Only read a website address returned by a successful publish_site call. Ask for a phone number if you do not have one, then call send_link. Only confirm the text was sent if send_link returns status "sent". If it returns "logged", "failed", or any error, explain that the text was not sent and read the published URL instead. Never claim a website was built or a message sent without a successful tool result.
 
 # Staying on task
 You only build websites. If they ask for anything else — coding, advice, news, homework, general chat, questions about what model you are — say briefly that you only build websites and ask your next question. Do not answer the off-topic thing, not even partly.
@@ -32,10 +32,10 @@ Numbers and prices: say them naturally ("twelve hundred rupees"). Read the web a
 
 /** Tool schemas, in the shape ElevenLabs expects for a webhook tool. */
 export function toolDefinitions(baseUrl, secret) {
-  const headers = [
-    { type: 'value', name: 'content-type', value: 'application/json' },
-    ...(secret ? [{ type: 'value', name: 'x-dayone-secret', value: secret }] : []),
-  ]
+  const headers = {
+    'content-type': 'application/json',
+    ...(secret ? { 'x-dayone-secret': secret } : {}),
+  }
   const url = (p) => `${baseUrl}${p}`
 
   return [
@@ -52,7 +52,7 @@ export function toolDefinitions(baseUrl, secret) {
           type: 'object',
           required: ['conversation_id'],
           properties: {
-            conversation_id: { type: 'string', description: 'The ElevenLabs conversation id for this call.' },
+            conversation_id: { type: 'string', dynamic_variable: 'system__conversation_id' },
             what: { type: 'string', description: 'What the business does, in the caller\'s own words.' },
             businessName: { type: 'string', description: 'The business name.' },
             action: { type: 'string', description: 'What a visitor should do: whatsapp, call, email or visit.' },
@@ -77,7 +77,7 @@ export function toolDefinitions(baseUrl, secret) {
           type: 'object',
           required: ['conversation_id'],
           properties: {
-            conversation_id: { type: 'string', description: 'The ElevenLabs conversation id for this call.' },
+            conversation_id: { type: 'string', dynamic_variable: 'system__conversation_id' },
           },
         },
       },
@@ -95,7 +95,7 @@ export function toolDefinitions(baseUrl, secret) {
           type: 'object',
           required: ['conversation_id'],
           properties: {
-            conversation_id: { type: 'string', description: 'The ElevenLabs conversation id for this call.' },
+            conversation_id: { type: 'string', dynamic_variable: 'system__conversation_id' },
             phone: { type: 'string', description: 'Number to text, if it was not captured earlier.' },
           },
         },

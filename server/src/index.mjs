@@ -109,7 +109,7 @@ async function handle(req, res) {
       return json(res, 200, { sessionId: session.id, reply: openingLine(), ready: false })
     }
     if (session.refused)
-      return json(res, 200, { sessionId: session.id, reply: 'I cannot help with that one.', ready: false, blocked: true })
+      return json(res, 200, { sessionId: session.id, reply: 'I cannot help with that one.', ready: false, blocked: true, refused: true })
 
     const turn = respond(session, body.message)
     session = turn.session
@@ -121,6 +121,7 @@ async function handle(req, res) {
         reply: turn.reply,
         ready: false,
         blocked: !!turn.blocked,
+        refused: !!session.refused,
         brief: session.brief,
       })
     }

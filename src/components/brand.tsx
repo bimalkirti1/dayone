@@ -145,9 +145,9 @@ export function Arcs({
 
 export type MicState = "idle" | "listening" | "speaking" | "thinking"
 
-/** Placeholder DayOne call line (Vobiz). Swap for the real number in one place. */
-export const CALL_NUMBER = "+91 80 4718 2290"
-export const CALL_TEL = "tel:+918047182290"
+/** Configured contact number; availability is not implied. */
+export const CALL_NUMBER = import.meta.env.VITE_CALL_NUMBER || "+91 8064 261918"
+export const CALL_TEL = `tel:${CALL_NUMBER.replace(/[^\d+]/g, "")}`
 
 export function Mic({
   state = "idle",

@@ -25,7 +25,6 @@ import {
   CallView,
   Caption,
   In,
-  LinkPreview,
   MessagesView,
   Phone,
 } from "./Phone"
@@ -252,7 +251,7 @@ function People() {
           ["2 min", "to make your page, just by talking"],
           ["₹0", "to try it, pay only when you go online"],
           ["4", "languages you can talk to us in"],
-          ["1 call", "to change anything, anytime"],
+          ["6 answers", "to publish a real website"],
         ].map(([big, small]) => (
           <div key={big} className="px-4 text-center md:border-l md:border-line md:first:border-l-0">
             <p className="text-[40px] font-medium tabular-nums tracking-[-0.04em] text-ink md:text-[48px]">
@@ -304,7 +303,7 @@ const FEATURES: { I: Ico; t: string; b: string }[] = [
   {
     I: icon("M12 3.5 19 6.5v5.2c0 4.3-2.9 7.5-7 8.8-4.1-1.3-7-4.5-7-8.8V6.5l7-3ZM9 12l2 2 4-4"),
     t: "Looked after, always",
-    b: "Hosting, safety and updates are on us. Need a change? Just call and tell us.",
+    b: "Start a new website conversation when you need a separate site. Phone support availability is not confirmed.",
   },
 ]
 
@@ -523,24 +522,23 @@ function HowItWorks() {
           <Bento
             tone="bg-white hair"
             eyebrow="Anytime"
-            title="Change anything, anytime"
-            body="Just say what you’d like, in the app or on a call. Done in seconds."
+            title="Make another website when you need one"
+            body="The builder creates a site from six answers. After publishing, start a new conversation to make another site."
           >
             <div className="w-full max-w-[380px] space-y-3">
               <p className="ml-auto w-fit rounded-[16px] rounded-br-[6px] bg-amber px-4 py-2.5 text-[15px] text-ink">
-                Make the headline shorter
+                Start a new website
               </p>
               <div className="rounded-[16px] bg-[#FFF5E9] p-4">
                 <p className="text-[14px] text-grey/70 line-through">
-                  Baked fresh with love, every day in Indiranagar
+                  Your first business website
                 </p>
                 <p className="mt-1 font-serif text-[24px] leading-tight text-[#5A3B28]">
-                  Homemade cakes, made with love
+                  A fresh conversation, a new website
                 </p>
               </div>
               <p className="flex items-center gap-1.5 text-[13px] text-grey">
-                <CheckIcon className="size-3.5 text-amber" /> Updated on your
-                page
+                <CheckIcon className="size-3.5 text-amber" /> New website flow
               </p>
             </div>
           </Bento>
@@ -755,26 +753,26 @@ function CallDemo() {
             Rather talk on the phone? Just call.
           </h2>
           <p className="mt-5 max-w-lg text-[18px] text-grey">
-            Ring our number from any phone. Tell DayOne about your business, and
-            your page arrives by SMS before you hang up. Need a change later?
-            Call again.
+            A phone contact number is configured below, but phone service
+            availability has not been confirmed. You can start your website
+            anonymously in the builder above.
           </p>
           <div className="hair mt-8 inline-flex flex-col gap-4 rounded-[20px] bg-white p-5 sm:flex-row sm:items-center sm:gap-6">
             <div>
-              <p className="text-[13px] text-grey">DayOne phone line</p>
+              <p className="text-[13px] text-grey">Configured contact number</p>
               <p className="mt-0.5 text-[26px] font-medium tabular-nums tracking-[-0.02em] text-ink">
                 {CALL_NUMBER}
               </p>
             </div>
             <a href={CALL_TEL} className="btn btn-amber h-11 px-5 text-[15px]">
-              <PhoneIcon /> Call now
+              <PhoneIcon /> Dial number
             </a>
           </div>
           <ul className="mt-8 space-y-3 text-[16px]">
             {[
-              "Talk in Hindi, English, Kannada or Tamil",
-              "We recognise your number, nothing to remember",
-              "Free to call from anywhere in India",
+              "Phone service availability is not confirmed",
+              "No account or sign-in is required to use the website builder",
+              "Start here in the browser to create your website",
             ].map((t) => (
               <li key={t} className="flex items-center gap-3">
                 <CheckIcon className="size-4 text-amber" />
@@ -783,10 +781,13 @@ function CallDemo() {
             ))}
           </ul>
           <p className="mt-8 text-[13px] text-grey/80">
-            Calls powered by Vobiz
+            Contact number: {CALL_NUMBER}. Service activation is not confirmed.
           </p>
         </Reveal>
         <Reveal delay={150} className="relative">
+          <p className="mb-3 text-center text-[12px] text-grey md:text-left">
+            Illustrative phone example only; service availability is not confirmed.
+          </p>
           <img
             src={photo(PHOTOS.call.id, 800)}
             alt={PHOTOS.call.alt}
@@ -802,29 +803,20 @@ function CallDemo() {
                 mic={step === 2 ? "listening" : "speaking"}
               >
                 {step >= 1 && (
-                  <Caption who="dayone">
-                    Hi! I’m DayOne. Tell me what you do.
-                  </Caption>
+                  <Caption who="dayone">Illustrative example: what does your business do?</Caption>
                 )}
                 {step >= 2 && (
-                  <Caption who="you">
-                    I bake custom cakes from home in Indiranagar.
-                  </Caption>
+                  <Caption who="you">I bake custom cakes from home.</Caption>
                 )}
                 {step >= 3 && (
-                  <Caption who="dayone">
-                    Lovely! Your page is ready. Sending you the link now.
-                  </Caption>
+                  <Caption who="dayone">A real builder conversation uses six answers to publish your site.</Caption>
                 )}
               </CallView>
             ) : (
               <MessagesView>
-                <In>
-                  Your page is live. Have a look:
-                  <LinkPreview />
-                </In>
+                <In>This is an illustrative phone flow. Phone availability is not confirmed.</In>
                 {step >= 5 && (
-                  <In>Want a change? Just call {CALL_NUMBER} anytime.</In>
+                  <In>For a new website, use the anonymous browser builder.</In>
                 )}
               </MessagesView>
             )}
@@ -883,7 +875,7 @@ const FOOTER: [string, [string, string][]][] = [
     "Help",
     [
       ["FAQ", "#faq"],
-      ["Call us", CALL_TEL],
+      ["Configured number (availability unconfirmed)", CALL_TEL],
       ["Phone line", "#call"],
     ],
   ],
@@ -957,7 +949,7 @@ export function Landing({
                 onClick={onLogin}
                 className="btn btn-white h-10 px-4 text-[15px]"
               >
-                Log in
+                Open builder
               </button>
             )}
             <button
@@ -1021,10 +1013,10 @@ export function Landing({
               onClick={jump("call")}
               className="inline-flex items-center gap-2 text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
             >
-              <PhoneIcon /> Prefer a call? {CALL_NUMBER}
+              <PhoneIcon /> Phone contact: {CALL_NUMBER} · availability unconfirmed
             </a>
             <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-              {["No tech skills needed", "Change anything, anytime"].map((c) => (
+              {["No tech skills needed", "Create a new site in six answers"].map((c) => (
                 <li key={c} className="flex items-center gap-1.5">
                   <CheckIcon className="size-3.5 text-amber" /> {c}
                 </li>
@@ -1050,7 +1042,7 @@ export function Landing({
           <SectionHead
             align="left"
             title="Questions you might have"
-            sub="Still unsure? Call us. A real person picks up."
+            sub="The anonymous browser builder is ready to use. Phone service availability is not confirmed."
           />
           <Reveal className="border-t border-line">
             <Faq
@@ -1059,19 +1051,19 @@ export function Landing({
             />
             <Faq
               q="What if I don’t like something?"
-              a="Just tell us. Say “make it brighter” or “change my phone number”, and it’s done. You can change anything, anytime."
+              a="The builder publishes a website after six answers. Post-publish edits are not supported in this builder; start a new website conversation instead."
             />
             <Faq
               q="Can I just call instead of using the app?"
-              a={`Yes. Ring ${CALL_NUMBER} from any phone. You’ll get your page by SMS, and you can call the same number whenever you want a change.`}
+              a={`Phone service availability is not confirmed for ${CALL_NUMBER}. Use the anonymous browser builder to create your website.`}
             />
             <Faq
               q="What does a care plan cover?"
-              a="Keeping your website online, safe and up to date. Call us with a change and we’ll do it for you. You can switch or stop your plan anytime."
+              a="Care plan details and phone support availability have not been confirmed in this builder."
             />
             <Faq
               q="Why is there a one-time price and a monthly plan?"
-              a="The one-time price pays for making your website, and it’s yours. The monthly care plan pays for keeping it online: hosting, safety, and changes whenever you call."
+              a="Pricing and care plan terms are shown for reference. Confirm current terms before purchasing."
             />
             <Faq
               q="Can I talk in Hindi, Kannada or Tamil?"
@@ -1103,7 +1095,7 @@ export function Landing({
               Start talking <ArrowIcon />
             </button>
             <a href={CALL_TEL} className="btn btn-white h-12 px-6 text-[16px]">
-              <PhoneIcon /> Call {CALL_NUMBER}
+              <PhoneIcon /> Dial configured number
             </a>
           </div>
         </Reveal>

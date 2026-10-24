@@ -5,8 +5,15 @@ is live and texted to their phone.
 
 This repo holds two halves:
 
-- `src/` — the marketing front end (React + Vite, from Figma Make). Unchanged.
+- `src/` — the React + Vite frontend and anonymous browser builder. The
+  builder sends real answers to `/api/chat` and displays the generated site.
 - `server/` — the service that does the work. **No dependencies.** Plain Node 22.
+
+The browser flow does not require phone-service credentials. Microphone input,
+where the browser supports it, transcribes answers; it is not an ElevenLabs call.
+Live telephone publishing additionally requires the deployed API URL, protected
+webhook tools on the agent, working Vobiz SIP routing, and SMS configuration.
+Do not treat a successful browser build as verification of the phone flow.
 
 ## How a call actually runs
 
