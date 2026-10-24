@@ -949,7 +949,7 @@ export function Landing({
                 onClick={onLogin}
                 className="btn btn-white h-10 px-4 text-[15px]"
               >
-                Open builder
+                Sign in
               </button>
             )}
             <button

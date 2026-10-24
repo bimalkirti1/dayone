@@ -8,15 +8,16 @@ import { Readable } from 'node:stream'
 test('browser tools isolate sessions, require signed tokens, and really publish', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'dayone-browser-'))
   process.env.DATA_DIR = dir
-  const { initStore } = await import('../src/store.mjs')
+  const { initStore, sites } = await import('../src/store.mjs')
   const { handleBrowserAgent, issueBrowserToken, verifyBrowserToken } = await import('../src/browser-agent.mjs')
   const { browserToolDefinitions } = await import('../src/elevenlabs.mjs')
   await initStore()
-  async function call(path, token, body = {}, headers = {}, peer = 'test') {
+  async function call(path, token, body = {}, headers = {}, peer = 'test', userId = 'user-a') {
     const req = Readable.from([Buffer.from(JSON.stringify(body))])
     req.method = 'POST'
     req.headers = { 'x-dayone-session': token, ...headers }
     req.socket = { remoteAddress: peer }
+    req.dayoneUserId = userId
     let status, data
     const res = {
       writeHead(code) { status = code },
@@ -26,13 +27,16 @@ test('browser tools isolate sessions, require signed tokens, and really publish'
     return { status, data }
   }
   try {
-    const token = issueBrowserToken()
-    const second = issueBrowserToken()
+    const token = issueBrowserToken('user-a')
+    const second = issueBrowserToken('user-b')
+    const asSecond = (path, body) => call(path, second, body, {}, 'test', 'user-b')
     assert.ok(verifyBrowserToken(token))
     assert.equal(verifyBrowserToken(`${token}broken`), null)
     assert.equal(verifyBrowserToken('not.a.token'), null)
     assert.equal(verifyBrowserToken(`${token.split('.')[0]}.${'é'.repeat(43)}`), null)
     assert.equal((await call('/api/agent/tools/save_brief', '')).status, 401)
+    assert.equal((await call('/api/agent/session', '', {}, {}, 'test', null)).status, 401)
+    assert.equal((await call('/api/agent/tools/save_brief', second)).status, 401, 'another account cannot use the signed ticket')
     const tools = browserToolDefinitions()
     assert.deepEqual(tools.map(t => t.name), ['save_brief', 'publish_site'])
     assert.ok(tools.every(t => t.type === 'client' && t.expects_response))
@@ -45,7 +49,8 @@ test('browser tools isolate sessions, require signed tokens, and really publish'
     const published = await call('/api/agent/tools/publish_site', token)
     assert.equal(published.data.ok, true)
     assert.match(published.data.url, /^https:\/\/example.test\/s\//)
-    assert.equal((await call('/api/agent/tools/publish_site', second)).data.ok, false)
+    assert.equal((await sites.get(published.data.slug)).ownerId, 'user-a')
+    assert.equal((await asSecond('/api/agent/tools/publish_site')).data.ok, false)
     const { default: config } = await import('../src/config.mjs')
     const { usageLimits } = await import('../src/store.mjs')
     const oldFetch = globalThis.fetch
@@ -78,8 +83,32 @@ test('browser tools isolate sessions, require signed tokens, and really publish'
       config.agentBudget = oldBudget
     }
     assert.equal((await call('/api/agent/tools/send_link', token)).status, 404)
-    assert.equal((await call('/api/agent/tools/save_brief', second, { what: 'escort services booking' })).data.refused, true)
-    assert.equal((await call('/api/agent/tools/publish_site', second)).data.ok, false)
+    assert.equal((await asSecond('/api/agent/tools/save_brief', { what: 'escort services booking' })).data.refused, true)
+    assert.equal((await asSecond('/api/agent/tools/publish_site')).data.ok, false)
+    const { handleDashboard } = await import('../src/dashboard.mjs')
+    async function dashboard(userId) {
+      let code, body
+      await handleDashboard({
+        method: 'GET', dayoneUserId: userId,
+        headers: { 'x-user-id': 'user-a' },
+      }, {
+        writeHead(status) { code = status },
+        end(payload) { body = JSON.parse(payload) },
+      }, '/api/dashboard/sites', 'https://example.test')
+      return { code, body }
+    }
+    assert.equal((await dashboard(null)).code, 401, 'forged identity headers do not authenticate')
+    assert.equal((await dashboard('user-b')).body.count, 0)
+    const owned = await dashboard('user-a')
+    assert.equal(owned.body.count, 1)
+    assert.equal(owned.body.sites[0].slug, published.data.slug)
+    const { publishBrief } = await import('../src/publish.mjs')
+    const ticket = verifyBrowserToken(token)
+    const anonymous = await publishBrief({ what: 'I bake cakes', businessName: 'Test Bakery' }, {
+      sessionId: ticket.sid, origin: 'https://example.test',
+    })
+    assert.notEqual(anonymous.slug, published.data.slug, 'anonymous reuse cannot overwrite an account-owned site')
+    assert.equal((await sites.get(published.data.slug)).ownerId, 'user-a')
   } finally {
     await rm(dir, { recursive: true, force: true })
   }

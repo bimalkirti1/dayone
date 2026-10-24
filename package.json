@@ -12,14 +12,23 @@
     "server": "node server/src/index.mjs",
     "test:flow": "node server/test/flow.mjs",
     "test:integrations": "node --test server/test/integrations.mjs server/test/browser-agent.mjs",
-    "test:agent-live": "node server/test/agent-live.mjs"
+    "test:agent-live": "node server/test/agent-live.mjs",
+    "test:dashboard-live": "node server/test/dashboard-live.mjs"
   },
   "dependencies": {
+    "@clerk/express": "^2.1.83",
+    "@clerk/react": "^6.18.1",
+    "@clerk/shared": "^4.41.1",
+    "@clerk/themes": "^2.4.57",
     "@elevenlabs/react": "^1.19.1",
     "@replit/connectors-sdk": "^0.5.0",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "http-proxy-middleware": "^4.2.0",
     "playwright-core": "^1.64.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "wouter": "^3.13.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",

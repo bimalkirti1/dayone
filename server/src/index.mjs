@@ -3,13 +3,19 @@
  *
  * Serves three things from one process: the API the voice agent calls while
  * someone is on the phone, the websites it publishes, and the marketing front
- * end. No framework, so there is nothing to install and nothing to patch.
+ * end. Express supplies the Clerk authentication/proxy middleware; the
+ * existing API handlers and JSON-file storage remain unchanged.
  */
 import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { readFile } from 'node:fs/promises'
+import express from 'express'
+import cors from 'cors'
+import { clerkMiddleware, getAuth } from '@clerk/express'
+import { publishableKeyFromHost } from '@clerk/shared/keys'
+import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from './middlewares/clerk-proxy.mjs'
 
 import config from './config.mjs'
 import { initStore, sessions, sites, deliveries } from './store.mjs'
@@ -23,9 +29,9 @@ import { AGENT_PROMPT, FIRST_MESSAGE, toolDefinitions } from './agent.mjs'
 import { DIRECTIONS } from './gen/directions.mjs'
 import { handleBrowserAgent } from './browser-agent.mjs'
 import { configureDayOneAgents } from './elevenlabs.mjs'
+import { handleDashboard } from './dashboard.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const PUBLIC_DIR = join(here, '..', 'public')
 const FRONTEND_DIR = join(here, '..', '..', 'dist')
 
 /* ---------- Session helpers ---------- */
@@ -94,6 +100,7 @@ async function handle(req, res) {
     })
   }
 
+  if (await handleDashboard(req, res, path, origin)) return
   if (await handleBrowserAgent(req, res, path, origin)) return
 
   if (path === '/api/voice/setup' && method === 'POST') {
@@ -252,6 +259,7 @@ async function handle(req, res) {
   }
 
   if (path === '/api/sites' && method === 'GET') {
+    if (!authorised(req)) return json(res, 401, { error: 'Owner access required' })
     const all = await sites.list()
     return json(res, 200, {
       count: all.length,
@@ -306,7 +314,6 @@ async function handle(req, res) {
       return json(res, 404, { error: 'Not found' })
     }
     if (path === '/' && await serveStatic(res, FRONTEND_DIR, '/index.html')) return
-    if (await serveStatic(res, PUBLIC_DIR, path === '/' ? '/console.html' : path)) return
     if (await serveStatic(res, FRONTEND_DIR, path)) return
     // The front end is a single-page app, so unknown paths fall back to it.
     try {
@@ -347,7 +354,20 @@ a{color:#2b2621}h1{font-size:1.4rem;margin:0 0 8px}</style></head>
 
 /* ---------- Boot ---------- */
 
-const server = createServer((req, res) => {
+const app = express()
+app.disable('x-powered-by')
+app.use(CLERK_PROXY_PATH, clerkProxyMiddleware())
+app.use(cors({ credentials: true, origin: true }))
+app.use(
+  clerkMiddleware((req) => ({
+    publishableKey: publishableKeyFromHost(
+      getClerkProxyHost(req) ?? '',
+      process.env.CLERK_PUBLISHABLE_KEY,
+    ),
+  })),
+)
+app.use((req, res) => {
+  req.dayoneUserId = getAuth(req).userId
   handle(req, res).catch((err) => {
     const status = err.status || 500
     if (status >= 500) console.error('[dayone]', req.method, req.url, err)
@@ -355,6 +375,12 @@ const server = createServer((req, res) => {
     else res.end()
   })
 })
+app.use((err, req, res, _next) => {
+  console.error('[dayone] authentication middleware failed', err.status || 'unavailable')
+  if (!res.headersSent) json(res, 503, { error: 'Sign-in is temporarily unavailable. Please try again later.' })
+  else res.end()
+})
+const server = createServer(app)
 
 const dir = await initStore()
 server.listen(config.port, config.host, () => {

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 204 42" role="img" aria-label="DayOne">
+  <g fill="#534c43">
+    <path d="M6 8h13c8 0 13 5 13 13s-5 13-13 13H6V8Zm8 6v14h5c4 0 6-3 6-7s-2-7-6-7h-5Z"/>
+    <path d="M43 34 53 8h9l10 26h-8l-2-6H52l-2 6h-7Zm11-12h6l-3-8-3 8Z"/>
+    <path d="M79 8h9l6 10 6-10h9L98 25v9h-8v-9L79 8Z"/>
+    <path d="M122 7c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14Zm0 7c-4 0-6 3-6 7s2 7 6 7 6-3 6-7-2-7-6-7Z"/>
+    <path d="M140 8h8l11 14V8h8v26h-7l-12-15v15h-8V8Z"/>
+    <path d="M175 8h23v7h-15v3h13v7h-13v3h15v6h-23V8Z"/>
+  </g>
+</svg>

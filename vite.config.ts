@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
 react(),
-      tailwindcss(),
+      tailwindcss({ optimize: false }),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),

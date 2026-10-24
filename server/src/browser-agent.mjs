@@ -21,8 +21,9 @@ function allow(key, limit, period) {
   return ++entry.count <= limit
 }
 const sign = payload => createHmac('sha256', signingKey).update(payload).digest('base64url')
-export function issueBrowserToken() {
-  const payload = Buffer.from(JSON.stringify({ sid: `browser-${randomUUID()}`, exp: Date.now() + 3600000 })).toString('base64url')
+export function issueBrowserToken(ownerId) {
+  if (!ownerId) throw new Error('An authenticated owner is required.')
+  const payload = Buffer.from(JSON.stringify({ sid: `browser-${randomUUID()}`, ownerId, exp: Date.now() + 3600000 })).toString('base64url')
   return `${payload}.${sign(payload)}`
 }
 export function verifyBrowserToken(token) {
@@ -33,13 +34,18 @@ export function verifyBrowserToken(token) {
   if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null
   try {
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
-    return data.exp > Date.now() && /^browser-[\da-f-]+$/.test(data.sid) ? data : null
+    return data.exp > Date.now() && typeof data.ownerId === 'string' && data.ownerId &&
+      /^browser-[\da-f-]+$/.test(data.sid) ? data : null
   } catch { return null }
 }
 
 /** Browser client tools never receive TOOL_SECRET or permission to send SMS. */
 export async function handleBrowserAgent(req, res, path, origin) {
   if (!path.startsWith('/api/agent/')) return false
+  const userId = req.dayoneUserId
+  if (!userId) {
+    json(res, 401, { error: 'Sign in to start or continue an agent session.' }); return true
+  }
   if (req.method !== 'POST') {
     json(res, 405, { error: 'POST required' }); return true
   }
@@ -57,7 +63,7 @@ export async function handleBrowserAgent(req, res, path, origin) {
     try {
       const signed = await elevenlabsRequest(`/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(config.elevenlabs.browserAgentId)}`)
       if (!signed.signed_url) throw new Error('ElevenLabs did not issue a conversation URL.')
-      json(res, 200, { signedUrl: signed.signed_url, sessionToken: issueBrowserToken() })
+      json(res, 200, { signedUrl: signed.signed_url, sessionToken: issueBrowserToken(userId) })
     } catch (err) {
       console.warn('[dayone] agent session unavailable', err.status || 'network')
       json(res, err.status === 429 ? 429 : 503, {
@@ -69,12 +75,17 @@ export async function handleBrowserAgent(req, res, path, origin) {
     return true
   }
   const ticket = verifyBrowserToken(req.headers['x-dayone-session'])
-  if (!ticket) { json(res, 401, { error: 'Start a new agent session first.' }); return true }
+  if (!ticket || ticket.ownerId !== userId) {
+    json(res, 401, { error: 'Start a new agent session first.' }); return true
+  }
   if (!allow(`tool:${ticket.sid}`, 100, 60000)) {
     json(res, 429, { error: 'Too many tool requests. Please wait.' }); return true
   }
   const body = await readJson(req, 16384)
-  const session = await sessions.get(ticket.sid) || { id: ticket.sid, brief: {}, channel: 'browser-agent' }
+  const session = await sessions.get(ticket.sid) || { id: ticket.sid, ownerId: userId, brief: {}, channel: 'browser-agent' }
+  if (session.ownerId !== userId) {
+    json(res, 403, { error: 'This session belongs to another account.' }); return true
+  }
   if (path === '/api/agent/tools/save_brief') {
     const input = [body.what, body.businessName, body.who, body.action].filter(Boolean).join('. ')
     const verdict = checkInput(input, { turn: 1 })
@@ -92,7 +103,7 @@ export async function handleBrowserAgent(req, res, path, origin) {
     if (!session.brief.what || !session.brief.businessName) {
       json(res, 200, { ok: false, say: 'Ask what the business does and its name, then save_brief first.' }); return true
     }
-    const site = await publishBrief(session.brief, { sessionId: ticket.sid, origin })
+    const site = await publishBrief(session.brief, { sessionId: ticket.sid, ownerId: userId, origin })
     session.url = site.url
     await sessions.put(ticket.sid, session)
     json(res, 200, { ok: true, url: site.url, slug: site.slug, say: 'The website was published. Its link is shown in the browser.' })

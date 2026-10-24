@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright-core'
+import { createTestAccount } from './helpers/clerk.mjs'
 
 if (process.env.RUN_LIVE_AGENT_TEST !== '1') {
   console.log('Skipped: set RUN_LIVE_AGENT_TEST=1 to use ElevenLabs account credits.')
@@ -17,10 +18,13 @@ const browser = await chromium.launch({
   headless: true, args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
 })
 let page
+let account
 try {
   const context = await browser.newContext({ permissions: voiceOnly ? ['microphone'] : [] })
   page = await context.newPage()
-  await page.goto(`${base}/#/build`)
+  account = await createTestAccount()
+  await account.signIn(page, base)
+  await page.goto(`${base}/build`)
   if (voiceOnly) {
     const audio = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('No provider audio arrived')), 30000)
@@ -60,4 +64,5 @@ try {
 } finally {
   if (page) await page.getByRole('button', { name: 'Stop session' }).click({ timeout: 1000 }).catch(() => {})
   await browser.close()
+  await account?.cleanup()
 }

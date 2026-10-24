@@ -9,14 +9,15 @@ import config from './config.mjs'
 const RESERVED = new Set(['api', 's', 'admin', 'health', 'static', 'assets', 'console', 'new', 'dayone'])
 
 /** Keep slugs unique without ever overwriting somebody else's page. */
-async function claimSlug(wanted, sessionId) {
+async function claimSlug(wanted, sessionId, ownerId) {
   let slug = RESERVED.has(wanted) ? `${wanted}-site` : wanted
   const existing = await sites.get(slug)
-  if (!existing || existing.sessionId === sessionId) return slug
+  const mayReuse = record => record.sessionId === sessionId && (!record.ownerId || record.ownerId === ownerId)
+  if (!existing || mayReuse(existing)) return slug
   for (let n = 2; n < 60; n++) {
     const candidate = `${slug}-${n}`
     const taken = await sites.get(candidate)
-    if (!taken || taken.sessionId === sessionId) return candidate
+    if (!taken || mayReuse(taken)) return candidate
   }
   return `${slug}-${Date.now().toString(36)}`
 }
@@ -28,9 +29,9 @@ export function publicOrigin(req) {
   return `${proto}://${host}`
 }
 
-export async function publishBrief(rawBrief, { sessionId = '', origin = '' } = {}) {
+export async function publishBrief(rawBrief, { sessionId = '', origin = '', ownerId = null } = {}) {
   const brief = normaliseBrief(rawBrief)
-  brief.slug = await claimSlug(brief.slug, sessionId)
+  brief.slug = await claimSlug(brief.slug, sessionId, ownerId)
 
   // Copy polish is best-effort and never blocks a publish.
   let copyOverride = null
@@ -48,6 +49,7 @@ export async function publishBrief(rawBrief, { sessionId = '', origin = '' } = {
   const record = {
     slug: brief.slug,
     sessionId,
+    ownerId,
     brief,
     html,
     meta,

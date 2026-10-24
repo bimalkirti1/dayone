@@ -26,6 +26,14 @@ services:
       # available only while running on Replit, not on another host.
       - key: ELEVENLABS_API_KEY
         sync: false
+      # Account auth keys are required on external hosting as well.
+      # Enter them securely in Render; never commit real values.
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
 
       # Temporary storage only: free instances lose these files on restart.
       - key: DATA_DIR

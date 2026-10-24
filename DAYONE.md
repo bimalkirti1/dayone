@@ -6,7 +6,28 @@ is live and texted to their phone.
 This repo holds two halves:
 
 - `src/` — React + Vite frontend with real ElevenLabs text/voice sessions.
-- `server/` — Node 22 API, generated websites, and server-side provider access.
+- `server/` — Node 22 API, Clerk/Express middleware, generated websites, and provider access.
+
+## Customer accounts and dashboard
+
+Customers can sign up or sign in with email at `/sign-up` and `/sign-in`.
+Signed-in customers land at `/dashboard`; `/build` creates account-owned sites.
+The dashboard uses the verified Clerk session cookie, not user IDs from browser
+parameters. It lists only that account's sites and provides actual open/copy
+links and new-build navigation. Published `/s/:slug` pages remain public.
+Anonymous historical sites and telephone-created pages are not automatically
+assigned to a new account. Free-host file storage remains temporary.
+
+Replit provisions the development authentication keys. External hosting must
+configure matching CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY, and
+VITE_CLERK_PUBLISHABLE_KEY securely before building/running this version.
+Never put secret keys in frontend code. The frontend publishable key is
+intentionally public. The canonical Clerk proxy is included for managed
+production hosting; do not hardcode or invent proxy settings.
+
+`pnpm test:dashboard-live` creates and removes two development-only test accounts,
+verifies real cookie sign-in, website ownership isolation, mobile layout,
+builder navigation, and sign-out. It does not start an AI session or send SMS.
 
 The browser uses the ElevenLabs React SDK and client tools. On Replit, the
 connected account issues signed sessions through the server. On another host,
@@ -59,8 +80,9 @@ pnpm test:integrations            # browser tokens and provider payloads
 1. Use [Deploy free test on Render](https://render.com/deploy?repo=https://github.com/bimalkirti1/dayone/tree/setup/render-free-test).
    It selects the `setup/render-free-test` branch, not the old demo on `main`.
    If a service already exists, update its branch instead of creating duplicates.
-2. Enter ELEVENLABS_API_KEY in Render's secure Blueprint form. Replit's
-   ElevenLabs connection does not automatically transfer to Render.
+2. Enter ELEVENLABS_API_KEY and matching Clerk authentication keys in Render's
+   secure Blueprint form. Workspace connections and secrets do not automatically
+   transfer to external hosting. Set VITE_CLERK_PUBLISHABLE_KEY before building.
 3. Render generates TOOL_SECRET and SESSION_SECRET. Wait for the service to say Live.
 4. Open `/admin/setup` on that service. Authenticate with username `owner`
    and its TOOL_SECRET from Render Environment as the password. This owner-only
@@ -75,9 +97,9 @@ on redeploy or restart. Free services also sleep when idle, which can delay
 voice webhooks. For real clients, use an always-on paid service with a
 persistent disk and set `DATA_DIR` to its mount path.
 
-The built frontend is served at `/`; the backend chat console is at
-`/console.html`. A frontend build failure now fails the deployment rather
-than silently shipping without the frontend.
+The built frontend is served at `/`. Technical test consoles are not exposed
+to customers. A frontend build failure fails deployment rather than silently
+shipping without the frontend.
 
 ## Wire up the telephone agent
 

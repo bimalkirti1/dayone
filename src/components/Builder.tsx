@@ -16,10 +16,12 @@ function BuilderConversation({
   opening,
   onHome,
   onNewWebsite,
+  onSessionStart,
 }: {
   opening?: string
   onHome: () => void
   onNewWebsite: () => void
+  onSessionStart: () => void
 }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [draft, setDraft] = useState("")
@@ -131,6 +133,7 @@ function BuilderConversation({
 
   async function start(modeChoice: "text" | "voice") {
     if (startBusy || connected || complete) return
+    onSessionStart()
     setSelectedMode(modeChoice)
     setStartBusy(true)
     setSessionAttempt(true)
@@ -314,6 +317,6 @@ function BuilderConversation({
   )
 }
 
-export function Builder(props: { opening?: string; onHome: () => void; onNewWebsite: () => void }) {
+export function Builder(props: { opening?: string; onHome: () => void; onNewWebsite: () => void; onSessionStart: () => void }) {
   return <ConversationProvider><BuilderConversation {...props} /></ConversationProvider>
 }

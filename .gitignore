@@ -22,4 +22,5 @@ logs/
 
 # DayOne
 server/data/
+/generated-artifacts/
 .env
